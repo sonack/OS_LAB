@@ -1,106 +1,128 @@
-!
-! SYS_SIZE is the number of clicks (16 bytes) to be loaded.
-! 0x3000 is 0x30000 bytes = 196kB, more than enough for current
-! versions of linux
-!
+! 要加载的系统模块长度  0x1000 = 0x10000 bytes = 64kb
 SYSSIZE = 0x3000
-!
-!	bootsect.s		(C) 1991 Linus Torvalds
-!
-! bootsect.s is loaded at 0x7c00 by the bios-startup routines, and moves
-! iself out of the way to address 0x90000, and jumps there.
-!
-! It then loads 'setup' directly after itself (0x90200), and the system
-! at 0x10000, using BIOS interrupts. 
-!
-! NOTE! currently system is at most 8*65536 bytes long. This should be no
-! problem, even in the future. I want to keep it simple. This 512 kB
-! kernel size should be enough, especially as this doesn't contain the
-! buffer cache as in minix
-!
-! The loader has been made as simple as possible, and continuos
-! read errors will result in a unbreakable loop. Reboot by hand. It
-! loads pretty fast by getting whole sectors at a time whenever possible.
 
+! 现在内核系统最大长度限制为 512 kb = 0x8000 clicks
+
+
+! 定义全局标识符
 .globl begtext, begdata, begbss, endtext, enddata, endbss
+
+! 代码段
 .text
+！ 后面带冒号为标号
 begtext:
+！ 数据段
 .data
 begdata:
+！ 未初始化数据段
 .bss
 begbss:
 .text
 
-SETUPLEN = 4				! nr of setup-sectors
-BOOTSEG  = 0x07c0			! original address of boot-sector
-INITSEG  = 0x9000			! we move boot here - out of the way
-SETUPSEG = 0x9020			! setup starts here
-SYSSEG   = 0x1000			! system loaded at 0x10000 (65536).
-ENDSEG   = SYSSEG + SYSSIZE		! where to stop loading
+SETUPLEN = 4				! nr of setup-sectors -- setup程序的扇区数 2KB
+BOOTSEG  = 0x07c0			! original address of boot-sector bootsect的原始地址 是段地址
+INITSEG  = 0x9000			! we move boot here - out of the way 将bootsect移动到9000
+SETUPSEG = 0x9020			! setup starts here setup模块的起始地址 0x90200 
+SYSSEG   = 0x1000			! system loaded at 0x10000 (65536). system模块加载到0x10000(64kb)处
+ENDSEG   = SYSSEG + SYSSIZE		! where to stop loading 停止加载的段地址
 
+
+! 根文件系统块设备号 0x000 和引导时同样的软驱设备
+! 0x301 第一个硬盘的第一个分区
+! 0.11 设备号的命名方式
 ! ROOT_DEV:	0x000 - same type of floppy as boot.
 !		0x301 - first partition on first drive etc
-ROOT_DEV = 0x306
+
+ROOT_DEV = 0x306 ! 第2个硬盘的第1个分区
+
+！ 迫使链接程序在生成的执行程序中包含指定的标识符
+
 
 entry _start
+
+！ 移动到0x90000处
 _start:
-	mov	ax,#BOOTSEG
-	mov	ds,ax
+! #是立即数常量前缀
+	mov	ax,#BOOTSEG ！立即数不能直接送至段寄存器
+	mov	ds,ax		! ds = 0x07c0
 	mov	ax,#INITSEG
-	mov	es,ax
-	mov	cx,#256
-	sub	si,si
-	sub	di,di
-	rep
-	movw
-	jmpi	go,INITSEG
-go:	mov	ax,cs
+	mov	es,ax		! es = 0x9000
+	mov	cx,#256		! 设置移动计数值 = 256 字 = 512 字节
+	sub	si,si		! 设置si = 0  源地址 ds:si
+	sub	di,di		! 设置di = 0  目的地址 es:di
+	rep				
+	movw			! 重复执行并递减cx，直到cx为0为止 movw即 movs指令
+	jmpi	go,INITSEG	! 段间跳转 INITSEG + go
+
+! 设置堆栈 要高于setup的4个扇区，即sp指向大于(段地址=0x9000) (0x200即bootsect + 0x200 * 4 即setup的4个扇区 + 堆栈大小) 即可  
+
+! 当BIOS将引导扇区加载到0x7c00处并把执行权交给引导程序时，ss=0x00,sp=0xfffe
+
+go:	mov	ax,cs		! 将ds和es和ss都置成移动后代码段 即 0x9000
 	mov	ds,ax
 	mov	es,ax
 ! put stack at 0x9ff00.
 	mov	ss,ax
 	mov	sp,#0xFF00		! arbitrary value >>512
 
+
+! 直接在bootsect后面读取setup模块，es已经为0x9000
 ! load the setup-sectors directly after the bootblock.
 ! Note that 'es' is already set up.
 
-load_setup:
-	mov	dx,#0x0000		! drive 0, head 0
-	mov	cx,#0x0002		! sector 2, track 0
-	mov	bx,#0x0200		! address = 512, in INITSEG
-	mov	ax,#0x0200+SETUPLEN	! service 2, nr of sectors
-	int	0x13			! read it
-	jnc	ok_load_setup		! ok - continue
-	mov	dx,#0x0000
-	mov	ax,#0x0000		! reset the diskette
-	int	0x13
-	j	load_setup
 
+! 利用BIOS中断 INT 0x13
+
+load_setup:
+	mov	dx,#0x0000		! 驱动器0 磁头0
+	mov	cx,#0x0002		! 磁道0 开始扇区2
+	mov	bx,#0x0200		! 内存开始偏移地址 INITSEG的512字节
+	mov	ax,#0x0200+SETUPLEN	! 服务2 即读扇区到内存 al为需要读的扇区数量 即4
+	int	0x13			! 调用BIOS中断
+	jnc	ok_load_setup		! 成功
+	mov	dx,#0x0000		! 出错，则重置驱动器、磁头
+	mov	ax,#0x0000		! 重置磁盘
+	int	0x13
+	j	load_setup		! 重新读取
+
+
+! 成功读取setup后
 ok_load_setup:
 
+! 取硬盘驱动器的参数，特别是每道的扇区数，来判断磁盘类型
 ! Get disk drive parameters, specifically nr of sectors/track
 
-	mov	dl,#0x00
+
+! 调用0x13中断
+
+	mov	dl,#0x00	! 驱动器号，此处为floppy软驱 如果是硬盘，则要置位7为1
 	mov	ax,#0x0800		! AH=8 is get drive parameters
 	int	0x13
 	mov	ch,#0x00
-	seg cs
-	mov	sectors,cx
-	mov	ax,#INITSEG
+	seg cs	
+	mov	sectors,cx	! 对于软盘，最大磁道号不会超过256,ch已经足够表示它，因此cl的位6和7一定是0，因此cx此时是每磁道最大扇区数
+	
+	mov	ax,#INITSEG	! 重新设置一下es的值
 	mov	es,ax
 
+
+! 打印一些愚蠢的信息，通过调用BIOS 0x10中断
 ! Print some inane message
 
-	mov	ah,#0x03		! read cursor pos
-	xor	bh,bh
-	int	0x10
+	! 读光标位置
+	mov	ah,#0x03	
+	xor	bh,bh		!光标位置保存在dx中，此处清除bh=0,即页号=0
+	int	0x10		!调用中断
 	
-	mov	cx,#24
+	mov	cx,#24		!共显示24个字符
 	mov	bx,#0x0007		! page 0, attribute 7 (normal)
 	mov	bp,#msg1
-	mov	ax,#0x1301		! write string, move cursor
+	mov	ax,#0x1301		! write string, move cursor al=01 使用bl中的属性  ah=0x13 功能号
 	int	0x10
 
+
+
+! 加载system模块到0x10000处
 ! ok, we've written the message, now
 ! we want to load the system (at 0x10000)
 
