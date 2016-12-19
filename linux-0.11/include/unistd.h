@@ -63,7 +63,7 @@
 #define __NR_read	3
 #define __NR_write	4
 #define __NR_open	5
-#define __NR_close	6
+#define __NR_close	6		/* 系统调用的编号 */
 #define __NR_waitpid	7
 #define __NR_creat	8
 #define __NR_link	9
@@ -129,6 +129,9 @@
 #define __NR_ssetmask	69
 #define __NR_setreuid	70
 #define __NR_setregid	71
+
+#define __NR_whoami	72
+#define __NR_iam	73
 
 #define _syscall0(type,name) \
 type name(void) \

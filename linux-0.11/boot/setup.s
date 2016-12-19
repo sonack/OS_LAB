@@ -1,1 +1,1 @@
-读入setup并显示获取的硬件参数/setup.s
+setup.s.bak

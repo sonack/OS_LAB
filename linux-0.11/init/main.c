@@ -129,6 +129,7 @@ void main(void)		/* This really IS void, no error here. */
 	chr_dev_init();
 	tty_init();
 	time_init();
+	// 调用了 sched_init() 函数 Lab2 ，该函数在kernel/sched.c中定义
 	sched_init();
 	buffer_init(buffer_memory_end);
 	hd_init();

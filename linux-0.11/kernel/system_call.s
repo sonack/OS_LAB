@@ -58,7 +58,8 @@ sa_mask = 4
 sa_flags = 8
 sa_restorer = 12
 
-nr_system_calls = 72
+# 系统调用总数，如果增删系统调用，必须修改该值 原始值:72
+nr_system_calls = 74
 
 /*
  * Ok, I get parallel printer interrupts while using the floppy for some
@@ -78,20 +79,21 @@ reschedule:
 	jmp schedule
 .align 2
 system_call:
-	cmpl $nr_system_calls-1,%eax
+	cmpl $nr_system_calls-1,%eax	# 检查系统调用编号是否合法
 	ja bad_sys_call
 	push %ds
 	push %es
 	push %fs
 	pushl %edx
-	pushl %ecx		# push %ebx,%ecx,%edx as parameters
+	pushl %ecx		# push %ebx,%ecx,%edx as parameters | 传递给系统调用的参数
 	pushl %ebx		# to the system call
-	movl $0x10,%edx		# set up ds,es to kernel space
+	movl $0x10,%edx		# set up ds,es to kernel space  |  ds和es指向GDT，内核地址空间
 	mov %dx,%ds
 	mov %dx,%es
-	movl $0x17,%edx		# fs points to local data space
+	movl $0x17,%edx		# fs points to local data space | fs(保护模式下多出的段寄存器) 指向LDT，用户地址空间
 	mov %dx,%fs
-	call sys_call_table(,%eax,4)
+	call sys_call_table(,%eax,4) # 之前是一些压栈保护，修改段选择子为内核段 等价于 intel 的 call sys_call_table + 4 * %eax,
+								 # 因此，sys_call_table是一个函数指针数组的起始地址，它定义在 include/linux/sys.h 中
 	pushl %eax
 	movl current,%eax
 	cmpl $0,state(%eax)		# state

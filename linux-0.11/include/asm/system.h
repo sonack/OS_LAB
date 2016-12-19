@@ -18,7 +18,7 @@ __asm__ ("movl %%esp,%%eax\n\t" \
 #define nop() __asm__ ("nop"::)
 
 #define iret() __asm__ ("iret"::)
-
+// 填写IDT（中断描述符表），将system_call函数地址写到0x80对应的中断描述符中，也就是在中断0x80发生后，自动调用函数system_call, system_call定义在kernel/system_call.s中
 #define _set_gate(gate_addr,type,dpl,addr) \
 __asm__ ("movw %%dx,%%ax\n\t" \
 	"movw %0,%%dx\n\t" \

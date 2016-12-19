@@ -1,1 +1,1 @@
-读入setup并显示获取的硬件参数/bootsect.s
+bootsect.s.bak
