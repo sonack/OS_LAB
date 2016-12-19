@@ -28,6 +28,10 @@ go: mov ax,cs
     mov ds,ax
     mov es,ax
 
+! 设置堆栈
+    mov ss,ax
+    mov sp,#0xFF00
+
 load_setup:
     mov dx,#0x0000     
     mov cx,#0x0002      

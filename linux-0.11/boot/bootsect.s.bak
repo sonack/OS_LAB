@@ -63,7 +63,7 @@ go:	mov	ax,cs		! 将ds和es和ss都置成移动后代码段 即 0x9000
 	mov	es,ax
 ! put stack at 0x9ff00.
 	mov	ss,ax
-	mov	sp,#0xFF00		! arbitrary value >>512
+	mov	sp,#0xFF00		! arbitrary value >> 512
 
 
 ! 直接在bootsect后面读取setup模块，es已经为0x9000
