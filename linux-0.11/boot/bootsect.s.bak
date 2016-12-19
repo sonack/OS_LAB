@@ -40,7 +40,7 @@ ROOT_DEV = 0x306 ! 第2个硬盘的第1个分区
 
 entry _start
 
-！ 移动到0x90000处
+! 移动到0x90000处
 _start:
 ! #是立即数常量前缀
 	mov	ax,#BOOTSEG ！立即数不能直接送至段寄存器
