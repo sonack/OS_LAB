@@ -55,7 +55,7 @@
 #include <sys/utsname.h>
 #include <utime.h>
 
-#ifdef __LIBRARY__
+#ifdef __LIBRARY__	 /* 所以必须定义宏__LIBRARY__ */
 
 #define __NR_setup	0	/* used only by init, to get system going */
 #define __NR_exit	1
@@ -130,8 +130,33 @@
 #define __NR_setreuid	70
 #define __NR_setregid	71
 
+/* Lab2 系统调用 */
 #define __NR_whoami	72
 #define __NR_iam	73
+/* Lab5 信号量 */
+#define __NR_sem_open	74
+#define __NR_sem_wait	75
+#define __NR_sem_post	76
+#define __NR_sem_unlink 77
+
+
+#define PCB_QUE_LEN 16	/* 设置PCB队列长度为16 */ 
+#define SEM_FAILED NULL
+
+typedef struct semaphore_queue
+{
+	int front;
+	int rear;
+	struct task_struct *wait_tasks[PCB_QUE_LEN];
+}sem_queue;
+
+typedef struct semaphore_t
+{
+	int value;
+	int occupied;
+	char name[32];
+	sem_queue wait_queue;
+}sem_t;
 
 #define _syscall0(type,name) \
 type name(void) \

@@ -1,3 +1,4 @@
+/* 编译命令:  gcc -o pc pc.c -Wall -pthread */
 #define __LIBRARY__  /*使用系统调用*/
 #include <unistd.h>         /* fork open 等 */
 #include <sys/types.h>
