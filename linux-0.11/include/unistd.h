@@ -138,7 +138,9 @@
 #define __NR_sem_wait	75
 #define __NR_sem_post	76
 #define __NR_sem_unlink 77
-
+/* Lab6 共享内存 */
+#define __NR_shmget 78
+#define __NR_shmat 79
 
 #define PCB_QUE_LEN 16	/* 设置PCB队列长度为16 */ 
 #define SEM_FAILED NULL

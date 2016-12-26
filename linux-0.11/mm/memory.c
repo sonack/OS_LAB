@@ -54,6 +54,7 @@ static long HIGH_MEMORY = 0;
 #define copy_page(from,to) \
 __asm__("cld ; rep ; movsl"::"S" (from),"D" (to),"c" (1024))
 
+
 static unsigned char mem_map [ PAGING_PAGES ] = {0,};
 
 /*
@@ -95,7 +96,7 @@ void free_page(unsigned long addr)
 	addr >>= 12;
 	if (mem_map[addr]--) return;
 	mem_map[addr]=0;
-	panic("trying to free free page");
+	// panic("trying to free free page");  /*避免释放两次出错*/
 }
 
 /*

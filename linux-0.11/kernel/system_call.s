@@ -59,7 +59,7 @@ sa_flags = 8
 sa_restorer = 12
 
 # 系统调用总数，如果增删系统调用，必须修改该值 原始值:72
-nr_system_calls = 78
+nr_system_calls = 80
 
 /*
  * Ok, I get parallel printer interrupts while using the floppy for some
